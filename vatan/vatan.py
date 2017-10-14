@@ -11,8 +11,7 @@ from config import product_urls, keyword
 
 logger = logging.getLogger(__name__)
 
-user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
-headers = {'User-Agent': user_agent}
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}
 ref_amount = None
 delta = None
 
@@ -30,22 +29,21 @@ def fetch_price(url):
     logger.debug('amount=%s, currency=%s, desc=%s', amount, currency, desc)
     item = PriceItem(desc, amount, currency)
     return item
-
-# print soup.find('span', class_='urunDetay_satisFiyat').contents[0]
-# print soup.find('span', class_='urunDetay_satisFiyat')
-# \.contents[1].contents[0]
+    # print soup.find('span', class_='urunDetay_satisFiyat').contents[0]
+    # print soup.find('span', class_='urunDetay_satisFiyat')
+    # \.contents[1].contents[0]
 
 
 def persist(item):
     def get_file_name():
         return os.environ["HOME"] + '/.item_prices'
 
-    f = io.open(get_file_name(), 'at', encoding='UTF-8', newline=None)
-    ser = ':'.join((item.name,
-                    str(item.amount).encode('UTF-8'),
-                    item.currency,
-                    str(item.datetime)))
-    f.write(ser + os.linesep)
+    with io.open(get_file_name(), 'at', encoding='UTF-8', newline=None) as f:
+        ser = ':'.join((item.name,
+                        str(item.amount).encode('UTF-8'),
+                        item.currency,
+                        str(item.datetime)))
+        f.write(ser + os.linesep)
 
 
 class PriceItem(object):
@@ -78,17 +76,15 @@ def read_history():
 
     c = Container('abc')
 
-    f = io.open(get_file_name(), 'rt', encoding='UTF-8', newline=None)
-    for ln, line in enumerate(f, 1):
-        name, amount, currency, date = line.rstrip(os.linesep).split(';')
-        logger.debug('line #%s: name=%s, amount=%s, currency=%s, date="%s"',
-                     ln, name, amount, currency, date)
-        item = PriceItem(name, amount, currency,
-                         datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f"))
-        c.add_item(item)
+    with io.open(get_file_name(), 'rt', encoding='UTF-8', newline=None) as f:
+        for ln, line in enumerate(f, 1):
+            name, amount, currency, date = line.rstrip(os.linesep).split(';')
+            logger.debug('ln#%s: name=%s, amount=%s, currency=%s, date="%s"',
+                         ln, name, amount, currency, date)
+            item = PriceItem(name, amount, currency,
+                             datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f"))
+            c.add_item(item)
     print c.prices
-
-    # TODO close file resource here
 
 
 def init_arg_parser():
@@ -116,10 +112,14 @@ def main():
     parse_args()
     # read_prices()
     for url in product_urls:
-        item = fetch_price(url)
-        if abs(ref_amount - item.amount) >= delta:
-            print 'price change event'
-        persist(item)
+        try:
+            item = fetch_price(url)
+            if abs(ref_amount - item.amount) >= delta:
+                print 'price change event'
+            persist(item)
+        except urllib2.HTTPError as e:
+            logger.error('HttpError code=%s, url="%s":%s',
+                         e.code, url, e, exc_info=True)
 
 
 if __name__ == '__main__':
