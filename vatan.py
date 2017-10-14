@@ -3,28 +3,18 @@ import os
 import logging
 import argparse
 import urllib2
+import collections
 from datetime import datetime
 from decimal import Decimal
 from bs4 import BeautifulSoup
+from config import product_urls, keyword
 
 logger = logging.getLogger(__name__)
 
-url1 = 'http://www.vatanbilgisayar.com/dell-xps-\
-13-9360-core-i7-7500u-2-7ghz-8gb-ram-256-ssd-int-13-3-w10.html'
-
-url2 = 'http://www.vatanbilgisayar.com/lenovo-thinkpad-x1-carbon-\
-core-i7-7600u-2-8ghz-16gb-ram-256gb-ssd-int-14-w10.html'
-
-url3 = 'http://www.vatanbilgisayar.com/dell-xps\
--13-core-i7-7500u-2-7ghz-16gb-ram-512-ssd-int-13-3-w10.html'
-
-urls = (url1, url2, url3)
-
-keyword = 'taksit_pesin taksitTutar1'
-
 user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
-
 headers = {'User-Agent': user_agent}
+ref_amount = None
+delta = None
 
 
 def fetch_price(url):
@@ -55,7 +45,7 @@ def persist(item):
                     str(item.amount).encode('UTF-8'),
                     item.currency,
                     str(item.datetime)))
-    f.write(ser + '\n')
+    f.write(ser + os.linesep)
 
 
 class PriceItem(object):
@@ -66,57 +56,70 @@ class PriceItem(object):
         currency (str)
         datetime (datetime)
     """
-    def __init__(self, name, amount, currency, datetime=None):
+    def __init__(self, name, amount, currency, created=None):
         self.name = name
         self.amount = Decimal(amount)
         self.currency = currency
-        self.datetime = datetime if datetime else datetime.now()
+        self.datetime = datetime if created else datetime.now()
 
 
 class Container(object):
     def __init__(self, name):
         self.name = name
-        self.prices = {}
+        self.prices = collections.OrderedDict()
 
     def add_item(self, item):
         self.prices[item.datetime] = item
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--debug', help='go with debug level',
-                        action='store_const', dest='loglevel',
-                        const=logging.DEBUG, default=logging.INFO)
-    return parser.parse_args()
-
-
-def read_prices():
+def read_history():
     def get_file_name():
         return os.environ["HOME"] + '/.item_prices'
 
     c = Container('abc')
 
     f = io.open(get_file_name(), 'rt', encoding='UTF-8', newline=None)
-    logger.debug('reading from file with encoding %s', f.encoding)
-    i = 1
-    for line in f:
+    for ln, line in enumerate(f, 1):
         name, amount, currency, date = line.rstrip(os.linesep).split(';')
         logger.debug('line #%s: name=%s, amount=%s, currency=%s, date="%s"',
-                     i, name, amount, currency, date)
-        i = i + 1
+                     ln, name, amount, currency, date)
         item = PriceItem(name, amount, currency,
                          datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f"))
         c.add_item(item)
     print c.prices
 
+    # TODO close file resource here
+
+
+def init_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--verbose', help='verbose output',
+                        action='store_const', dest='loglevel',
+                        const=logging.DEBUG, default=logging.INFO)
+    parser.add_argument('--delta', type=int, default=10,
+                        help='price delta')
+    parser.add_argument('reference', type=int,
+                        help='reference price')
+    return parser
+
+
+def parse_args():
+    global ref_amount, delta
+    args = init_arg_parser().parse_args()
+    logging.basicConfig(level=args.loglevel)
+    ref_amount = Decimal(args.reference)
+    delta = Decimal(args.delta)
+    return args
+
 
 def main():
-    args = parse_args()
-    logging.basicConfig(level=args.loglevel)
-    read_prices()
-    # for url in urls:
-    #    item = fetch_price(url)
-    #    persist(item)
+    parse_args()
+    # read_prices()
+    for url in product_urls:
+        item = fetch_price(url)
+        if abs(ref_amount - item.amount) >= delta:
+            print 'price change event'
+        persist(item)
 
 
 if __name__ == '__main__':
