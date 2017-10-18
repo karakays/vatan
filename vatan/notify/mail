@@ -1,6 +1,7 @@
 Hello there,
 
-Price of {ITEM} has changed to {PRICE}
+We would like to notify you that price of {ITEM} has changed to {PRICE}
+Back then when you registered the item, its price was {LAST_PRICE}.
 
 Yours Truly,
 
