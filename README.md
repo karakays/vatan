@@ -9,16 +9,12 @@ in case its price has changed.
 
 Usage:
 
-To register a product you are interested in, simply type -
+To register a product you are interested in, simply type. If this is the first time you register
+a product, you need to store your gmail account as well.
 
 ```bash
 $ python -m vatan reg <product_url>
 ```
 
-vatan.py bases current price of the product at the moment you register the product.
-
-
-```bash
-$ python -m vatan pull 
-```
+And that's it! If there is any change on the product price, you will get notified through your e-mail.
 
