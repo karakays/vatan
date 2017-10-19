@@ -9,6 +9,8 @@ setup(
     author_email='skarakayali@gmail.com',
     url='http://github.com/karakays/vatan/',
     packages=find_packages(),
+    include_package_data=True,
+    package_data={'vatan.resources': ['mail']},
     license='GNU GENERAL PUBLIC LICENSE',
     entry_points={
         'console_scripts': [
