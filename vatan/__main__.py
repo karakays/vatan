@@ -42,8 +42,6 @@ def main(args=None):
             vatan.persist(vatan.make_item_path(i.uri), snapshot)
             if snapshot.amount != i.amount:
                 notify.send_mail(i, snapshot)
-            else:
-                notify.send_mail(i, snapshot)
     elif args.command == 'read':
         pass
     else:
