@@ -10,11 +10,9 @@ from decimal import Decimal
 from bs4 import BeautifulSoup
 from urlparse import urlparse
 from notify import notify
-from config import keyword, main_dir
+from config import keyword, main_dir, vatan_host
 
 logger = logging.getLogger(__name__)
-
-vatan_host = 'http://www.vatanbilgisayar.com/'
 
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}
 
@@ -124,7 +122,7 @@ def read_history():
 def register(url):
     if not create_dir_if_not_exists():
         notify.store_user_email()
-        os.system("echo \"* * * * * python -m vatan pull\" | crontab -")
+        os.system("echo \"0 */6 * * * python -m vatan pull\" | crontab -")
 
     if url.index(vatan_host):
         raise ValueError('Bad url', url)
@@ -203,18 +201,10 @@ def main():
             if snapshot.amount != i.amount:
                 notify.send_mail(i, snapshot)
     elif args.command == 'read':
+        # TODO implement
         pass
     else:
         pass
-
-#        try:
-#            item = fetch_price(url)
-#            if abs(ref_amount - item.amount) >= delta:
-#                print 'price change event'
-#            persist(item)
-#        except urllib2.HTTPError as e:
-#            logger.error('HttpError code=%s, url="%s":%s',
-#                         e.code, url, e, exc_info=True)
 
 
 if __name__ == '__main__':
