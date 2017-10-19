@@ -13,3 +13,5 @@ keyword = 'taksit_pesin taksitTutar1'
 main_dir = os.environ["HOME"] + '/.vatan/'
 
 user_mail = 'skarakayali@gmail.com'
+
+vatan_host = 'http://www.vatanbilgisayar.com/'
