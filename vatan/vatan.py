@@ -10,16 +10,13 @@ from decimal import Decimal
 from bs4 import BeautifulSoup
 from urlparse import urlparse
 from notify import notify
-from config import keyword
+from config import keyword, main_dir
 
 logger = logging.getLogger(__name__)
-
-local_dir = os.environ["HOME"] + '/.vatan/'
 
 vatan_host = 'http://www.vatanbilgisayar.com/'
 
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}
-
 
 def fetch_price(uri):
     request = urllib2.Request(url=vatan_host + uri, headers=headers)
@@ -45,14 +42,15 @@ def read_item(path):
     <date>::<last-amount>:<currency>
     """
     item = None
-    with io.open(local_dir + path, 'rt', encoding='UTF-8', newline=None) as f:
-        uri, amount, currency = f.readline().split(':')
+    with io.open(main_dir + path, 'rt', encoding='UTF-8', newline=None) as f:
+        s = f.readline().split(':')
+        uri, amount, currency = s
         item = Item(uri, Decimal(amount), currency)
     return item
 
 
 def read_items():
-    return [read_item(path) for path in os.listdir(local_dir)]
+    return [read_item(path) for path in os.listdir(main_dir) if path != '.mailpass']
 
 
 def make_item_path(uri):
@@ -60,7 +58,7 @@ def make_item_path(uri):
 
 
 def persist(path, snapshot):
-    with io.open(local_dir + path, 'at', encoding='UTF-8', newline=None) as f:
+    with io.open(main_dir + path, 'at', encoding='UTF-8', newline=None) as f:
         ser = ':'.join((datetime.strftime(snapshot.datetime, "%Y-%m-%d %H:%M"),
                         str(snapshot.amount).encode('UTF-8'),
                         snapshot.currency))
@@ -124,7 +122,9 @@ def read_history():
 
 
 def register(url):
-    check_dir()
+    if not create_dir_if_not_exists():
+        notify.store_user_email()
+        os.system("echo \"* * * * * python -m vatan pull\" | crontab -")
 
     if url.index(vatan_host):
         raise ValueError('Bad url', url)
@@ -132,13 +132,13 @@ def register(url):
     uri = url[len(vatan_host):]
     snapshot = fetch_price(uri)
     item = Item(uri, snapshot.amount, snapshot.currency)
-    full_path = local_dir + make_item_path(uri)
+    full_path = main_dir + make_item_path(uri)
     with io.open(full_path, 'wt', encoding='UTF-8', newline=None) as f:
         ser = ':'.join((item.uri,
                         str(item.amount).encode('UTF-8'),
                         item.currency))
         f.write(ser + os.linesep)
-
+    
 
 def parse_args():
     """
@@ -184,9 +184,11 @@ def ping():
     return '%s: pong!' % __name__
 
 
-def check_dir():
-    if not os.path.exists(local_dir):
-        os.mkdir(local_dir, 0774)
+def create_dir_if_not_exists():
+    exists = os.path.exists(main_dir)
+    if not exists:
+        os.mkdir(main_dir, 0774)
+    return exists
 
 
 def main():

@@ -1,1 +1,2 @@
-include mail
+resources
+recursive-include resources mail
