@@ -1,0 +1,8 @@
+Hello there,
+
+We would like to inform you that price of ${ITEM} has changed to ${CURR} ${PRICE} 
+Back then when you registered the item, its price was ${CURR} ${LAST_PRICE}.
+
+Yours Truly,
+
+vatan.py
