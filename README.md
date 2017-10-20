@@ -9,8 +9,15 @@ in case its price has changed.
 
 Usage:
 
+Install first from PyPI repository.
+
+```bash
+$ pip install vatan
+```
+
 To register a product you are interested in, simply type. If this is the first time you register
 a product, you need to store your gmail account as well.
+
 
 ```bash
 $ python -m vatan reg <product_url>
