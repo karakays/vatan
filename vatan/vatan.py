@@ -29,9 +29,6 @@ def fetch_price(uri):
     logger.debug('amount=%s, currency=%s, desc=%s', amount, currency, desc)
     item = ItemSnapshot(desc, amount, currency)
     return item
-    # print soup.find('span', class_='urunDetay_satisFiyat').contents[0]
-    # print soup.find('span', class_='urunDetay_satisFiyat')
-    # \.contents[1].contents[0]
 
 
 def read_item(path):
